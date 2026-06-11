@@ -31,18 +31,18 @@ VIETNAMESE_STOPWORDS = {
     "em", "anh", "chị", "bạn", "họ", "chúng",
 }
 
-# Không xóa các từ này vì chúng rất quan trọng cho sentiment.
+
 SENTIMENT_KEEP_WORDS = {
     "không", "chưa", "chẳng", "đừng", "rất", "quá", "hơi", "kém",
     "tốt", "hay", "tệ", "dở", "chán", "khó", "dễ", "ổn",
 }
+
 
 _word_tokenize = None
 _underthesea_ok = None
 
 
 def _get_word_tokenize():
-    """Lazy import underthesea để nếu chưa cài thì chương trình vẫn chạy được."""
     global _word_tokenize, _underthesea_ok
     if _underthesea_ok is None:
         try:
@@ -59,6 +59,7 @@ class Preprocessor:
     def __init__(
         self,
         normalize_unicode=True,
+        normalize_special_tokens=True,
         normalize_teencode=True,
         remove_punct=True,
         remove_digits=True,
@@ -66,6 +67,7 @@ class Preprocessor:
         remove_stopwords=False,
     ):
         self.normalize_unicode = normalize_unicode
+        self.normalize_special_tokens = normalize_special_tokens
         self.normalize_teencode = normalize_teencode
         self.remove_punct = remove_punct
         self.remove_digits = remove_digits
@@ -73,7 +75,6 @@ class Preprocessor:
         self.remove_stopwords = remove_stopwords
 
     def clean(self, text):
-        """Xử lý 1 câu và trả về chuỗi đã làm sạch."""
         if not isinstance(text, str):
             return ""
 
@@ -81,38 +82,87 @@ class Preprocessor:
             text = unicodedata.normalize("NFC", text)
 
         text = text.lower()
+
+        # Xóa HTML và URL
         text = re.sub(r"<[^>]+>", " ", text)
         text = re.sub(r"http\S+|www\S+", " ", text)
 
+        # Chuẩn hóa token đặc biệt của UIT-VSFC
+        if self.normalize_special_tokens:
+            text = self._normalize_special_tokens(text)
+
+        # Chuẩn hóa teencode
         if self.normalize_teencode:
             text = self._normalize_teencode(text)
 
+        # Xóa dấu câu
         if self.remove_punct:
             text = re.sub(r"[^\w\s]", " ", text)
 
+        # Xóa số
         if self.remove_digits:
             text = re.sub(r"\d+", " ", text)
 
+        # Gọn khoảng trắng
         text = re.sub(r"\s+", " ", text).strip()
 
+        # Ghép từ tiếng Việt
         if self.word_segment and text:
             word_tokenize = _get_word_tokenize()
             if word_tokenize is not None:
                 text = word_tokenize(text, format="text")
 
+        # Xóa stopwords nếu bật
         if self.remove_stopwords and text:
             text = self._remove_stopwords(text)
 
         return text
 
     def clean_batch(self, texts):
-        """Xử lý danh sách câu."""
         return [self.clean(text) for text in texts]
 
     def _normalize_teencode(self, text):
-        words = text.split()
-        normalized = [TEENCODE_MAP.get(word, word) for word in words]
-        return " ".join(normalized)
+        for teen_word, normal_word in TEENCODE_MAP.items():
+            text = re.sub(
+                rf"\b{re.escape(teen_word)}\b",
+                f" {normal_word} ",
+                text
+            )
+        return text
+
+    def _normalize_special_tokens(self, text):
+        # Mã ẩn danh tên người/trường: wzjwz208, wzjwz324...
+        text = re.sub(r"\bwzjwz\d+\b", " name_token ", text)
+
+        # Số thập phân dạng 1dot5, 2dot0...
+        text = re.sub(r"\b\d+dot\d+\b", " num_token ", text)
+
+        # Emoji tích cực
+        text = re.sub(
+            r"\bcolon(love|lovelove|smile|smilesmile|bigsmile|smallsmile|hihi|cc)\b",
+            " emoji_positive ",
+            text
+        )
+
+        # Emoji tiêu cực
+        text = re.sub(
+            r"\bcolon(sad|sadcolon|contemn)\b",
+            " emoji_negative ",
+            text
+        )
+
+        # Các emoji khác
+        text = re.sub(r"\bcolon[a-z]+\b", " emoji_token ", text)
+
+        # Token thay cho dấu câu
+        text = re.sub(r"\bdotdotdot\b", " ", text)
+        text = re.sub(r"\bdoubledot\b", " ", text)
+        text = re.sub(r"\bdot\b", " ", text)
+
+        # v.v
+        text = re.sub(r"\bvdotv\b", " etc_token ", text)
+
+        return text
 
     def _remove_stopwords(self, text):
         words = []
@@ -123,18 +173,3 @@ class Preprocessor:
             elif word not in VIETNAMESE_STOPWORDS and plain_word not in VIETNAMESE_STOPWORDS:
                 words.append(word)
         return " ".join(words)
-
-
-if __name__ == "__main__":
-    prep = Preprocessor()
-    examples = [
-        "gv rất dễ hiểu!!!",
-        "Môn này ko dễ hiểu.",
-        "Sv thấy bài tập quá khó.",
-        "xem tại https://example.com <b>rất hữu ích</b>",
-    ]
-
-    for example in examples:
-        print("Input :", example)
-        print("Output:", prep.clean(example))
-        print()
