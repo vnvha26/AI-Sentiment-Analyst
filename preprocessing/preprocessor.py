@@ -1,16 +1,3 @@
-"""
-preprocessor.py
-
-Tiền xử lý văn bản tiếng Việt cho bài toán Sentiment Analysis.
-
-Thiết kế cho dataset UIT-VSFC và câu người dùng nhập:
-  - Dữ liệu train là tiếng Việt có dấu.
-  - Không chuẩn hóa sang không dấu.
-  - Có chuẩn hóa một số teencode phổ biến sang tiếng Việt có dấu để hỗ trợ demo.
-  - Không xóa stopwords mặc định vì nhiều từ như "không", "chưa", "rất"
-    ảnh hưởng trực tiếp tới cảm xúc.
-"""
-
 import re
 import unicodedata
 
