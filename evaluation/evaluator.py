@@ -16,8 +16,11 @@ def evaluate(model, X_test, y_test):
         "accuracy": accuracy_score(y_test, y_pred),
         "f1": f1_score(y_test, y_pred, average="weighted", zero_division=0),
         "train_time": model.train_time,
-        "label_scores": _label_scores(y_test, y_pred),
     }
+
+
+        "label_scores": _label_scores(y_test, y_pred),
+    }sS
 
 
 def _label_scores(y_true, y_pred):
