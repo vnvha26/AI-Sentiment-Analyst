@@ -5,17 +5,24 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 class RandomForestSentiment:
-    def __init__(self, n_estimators=50, max_depth=None):
+    def __init__(
+        self,
+        n_estimators=100,
+        max_depth=None,
+        ngram_range=(1, 1),
+        max_features=10000,
+        random_state=42,
+    ):
         self.name = "Random Forest"
         self.vectorizer = TfidfVectorizer(
-            ngram_range=(1, 1),
-            max_features=10000,
+            ngram_range=ngram_range,
+            max_features=max_features,
             sublinear_tf=True,
         )
         self.model = RandomForestClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
-            random_state=42,
+            random_state=random_state,
             n_jobs=-1,
         )
         self.train_time = 0
