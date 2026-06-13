@@ -11,13 +11,14 @@ class RandomForestSentiment:
         max_depth=None,
         ngram_range=(1, 1),
         max_features=10000,
+        sublinear_tf=True,
         random_state=42,
     ):
         self.name = "Random Forest"
         self.vectorizer = TfidfVectorizer(
             ngram_range=ngram_range,
             max_features=max_features,
-            sublinear_tf=True,
+            sublinear_tf=sublinear_tf,
         )
         self.model = RandomForestClassifier(
             n_estimators=n_estimators,
