@@ -13,9 +13,20 @@ class LogisticRegressionSentiment:
         max_features=30000,
         sublinear_tf=True,
         class_weight=None,
+        solver="lbfgs",
         random_state=42,
     ):
         self.name = "Logistic Regression"
+        self.params = {
+            "C": C,
+            "max_iter": max_iter,
+            "ngram_range": ngram_range,
+            "max_features": max_features,
+            "sublinear_tf": sublinear_tf,
+            "class_weight": class_weight,
+            "solver": solver,
+            "random_state": random_state,
+        }
         self.vectorizer = TfidfVectorizer(
             ngram_range=ngram_range,
             max_features=max_features,
@@ -25,6 +36,7 @@ class LogisticRegressionSentiment:
             C=C,
             max_iter=max_iter,
             class_weight=class_weight,
+            solver=solver,
             random_state=random_state,
         )
         self.train_time = 0
@@ -49,3 +61,34 @@ class LogisticRegressionSentiment:
         label = int(proba.argmax())
         confidence = float(proba[label])
         return label, confidence
+
+    def top_features(self, n=15):
+        if not hasattr(self.model, "coef_"):
+            raise RuntimeError("Model is not trained. Call fit() before top_features().")
+
+        vocab = self.vectorizer.get_feature_names_out()
+        class_features = {}
+
+        print(f"\nTop {n} positive features per class ({self.name}):")
+        for class_index, class_label in enumerate(self.model.classes_):
+            weights = self.model.coef_[class_index]
+            top_indices = weights.argsort()[-n:][::-1]
+
+            features = [
+                {
+                    "feature": vocab[index],
+                    "weight": float(weights[index]),
+                }
+                for index in top_indices
+            ]
+            class_features[int(class_label)] = features
+
+            print(f"\nClass {int(class_label)}:")
+            for rank, item in enumerate(features, start=1):
+                print(
+                    f"  {rank:>2}. "
+                    f"{item['feature']:<20} "
+                    f"{item['weight']:.5f}"
+                )
+
+        return class_features
