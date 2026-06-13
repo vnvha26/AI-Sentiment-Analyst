@@ -12,6 +12,9 @@ class RandomForestSentiment:
         ngram_range=(1, 1),
         max_features=10000,
         sublinear_tf=True,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        class_weight=None,
         random_state=42,
     ):
         self.name = "Random Forest"
@@ -23,6 +26,9 @@ class RandomForestSentiment:
         self.model = RandomForestClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
+            min_samples_split=min_samples_split,
+            min_samples_leaf=min_samples_leaf,
+            class_weight=class_weight,
             random_state=random_state,
             n_jobs=-1,
         )
@@ -48,3 +54,26 @@ class RandomForestSentiment:
         label = int(proba.argmax())
         confidence = float(proba[label])
         return label, confidence
+
+    def top_features(self, n=15):
+        vocab = self.vectorizer.get_feature_names_out()
+        importances = self.model.feature_importances_
+        top_indices = importances.argsort()[-n:][::-1]
+
+        features = [
+            {
+                "feature": vocab[index],
+                "importance": float(importances[index]),
+            }
+            for index in top_indices
+        ]
+
+        print(f"\nTop {n} important features ({self.name}):")
+        for rank, item in enumerate(features, start=1):
+            print(
+                f"  {rank:>2}. "
+                f"{item['feature']:<20} "
+                f"{item['importance']:.5f}"
+            )
+
+        return features
