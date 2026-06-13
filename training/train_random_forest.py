@@ -19,6 +19,16 @@ DATA_DIR_CANDIDATES = [
     os.path.join(PROJECT_ROOT, "data", "data", "uit-vsfc-sentiment"),
 ]
 
+BEST_PARAMS = {
+    "n_estimators": 200,
+    "max_depth": None,
+    "ngram_range": (1, 2),
+    "max_features": 15000,
+    "sublinear_tf": True,
+    "min_samples_leaf": 1,
+    "class_weight": None,
+}
+
 
 def find_data_dir():
     for data_dir in DATA_DIR_CANDIDATES:
@@ -40,13 +50,16 @@ def main():
     X_train_clean = preprocessor.clean_batch(X_train)
     X_test_clean = preprocessor.clean_batch(X_test)
 
-    print("\nTrain Random Forest...")
-    model = RandomForestSentiment(n_estimators=50)
+    print("\nTrain final Random Forest...")
+    print(f"Best params from dev tuning: {BEST_PARAMS}")
+    model = RandomForestSentiment(**BEST_PARAMS)
     model.fit(X_train_clean, y_train)
 
     print("\nEvaluate on test set...")
     result = evaluate(model, X_test_clean, y_test)
     print_result(result)
+
+    model.top_features(15)
 
     model_path = os.path.join(PROJECT_ROOT, "models", "random_forest.joblib")
     save_model(model, model_path)
