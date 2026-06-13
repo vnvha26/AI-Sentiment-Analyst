@@ -233,6 +233,9 @@ def main():
     )
     print("-" * 106)
 
+    print("Selection metric: weighted dev F1")
+    print("Neutral F1 is reported separately to analyze class imbalance.\n")
+
     best = None
     best_neutral = None
     for index, params in enumerate(PARAM_GRID, start=1):
@@ -247,12 +250,14 @@ def main():
         result = evaluate(model, X_dev_clean, y_dev)
         print_row(index, params, result)
 
+        # Primary model selection: maximize weighted F1 on dev.
         if best is None or result["f1"] > best["result"]["f1"]:
             best = {
                 "params": params,
                 "result": result,
             }
 
+        # Secondary analysis only: track the config that handles Neutral best.
         if (
             best_neutral is None
             or get_label_f1(result, NEUTRAL_LABEL)
