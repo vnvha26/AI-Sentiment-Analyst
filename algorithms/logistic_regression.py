@@ -11,52 +11,29 @@ class LogisticRegressionSentiment:
         max_iter=1000,
         ngram_range=(1, 2),
         max_features=30000,
-        min_df=1,
-        max_df=1.0,
         sublinear_tf=True,
         class_weight=None,
-        solver="lbfgs",
-        penalty="l2",
-        tol=0.0001,
-        fit_intercept=True,
-        n_jobs=None,
         random_state=42,
     ):
         self.name = "Logistic Regression"
-        self.params = {
-            "C": C,
-            "max_iter": max_iter,
+        self.vectorizer_params = {
             "ngram_range": ngram_range,
             "max_features": max_features,
-            "min_df": min_df,
-            "max_df": max_df,
             "sublinear_tf": sublinear_tf,
+        }
+        self.model_params = {
+            "C": C,
+            "max_iter": max_iter,
             "class_weight": class_weight,
-            "solver": solver,
-            "penalty": penalty,
-            "tol": tol,
-            "fit_intercept": fit_intercept,
-            "n_jobs": n_jobs,
+            "solver": "lbfgs",
             "random_state": random_state,
         }
-        self.vectorizer = TfidfVectorizer(
-            ngram_range=ngram_range,
-            max_features=max_features,
-            min_df=min_df,
-            max_df=max_df,
-            sublinear_tf=sublinear_tf,
-        )
-        self.model = LogisticRegression(
-            C=C,
-            max_iter=max_iter,
-            class_weight=class_weight,
-            solver=solver,
-            penalty=penalty,
-            tol=tol,
-            fit_intercept=fit_intercept,
-            n_jobs=n_jobs,
-            random_state=random_state,
-        )
+        self.params = {
+            **self.vectorizer_params,
+            **self.model_params,
+        }
+        self.vectorizer = TfidfVectorizer(**self.vectorizer_params)
+        self.model = LogisticRegression(**self.model_params)
         self.train_time = 0
 
     def fit(self, X_train, y_train):
