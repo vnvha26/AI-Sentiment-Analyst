@@ -13,32 +13,27 @@ class LogisticRegressionSentiment:
         max_features=30000,
         sublinear_tf=True,
         class_weight=None,
-        solver="lbfgs",
         random_state=42,
     ):
         self.name = "Logistic Regression"
-        self.params = {
-            "C": C,
-            "max_iter": max_iter,
+        self.vectorizer_params = {
             "ngram_range": ngram_range,
             "max_features": max_features,
             "sublinear_tf": sublinear_tf,
+        }
+        self.model_params = {
+            "C": C,
+            "max_iter": max_iter,
             "class_weight": class_weight,
-            "solver": solver,
+            "solver": "lbfgs",
             "random_state": random_state,
         }
-        self.vectorizer = TfidfVectorizer(
-            ngram_range=ngram_range,
-            max_features=max_features,
-            sublinear_tf=sublinear_tf,
-        )
-        self.model = LogisticRegression(
-            C=C,
-            max_iter=max_iter,
-            class_weight=class_weight,
-            solver=solver,
-            random_state=random_state,
-        )
+        self.params = {
+            **self.vectorizer_params,
+            **self.model_params,
+        }
+        self.vectorizer = TfidfVectorizer(**self.vectorizer_params)
+        self.model = LogisticRegression(**self.model_params)
         self.train_time = 0
 
     def fit(self, X_train, y_train):
@@ -64,7 +59,9 @@ class LogisticRegressionSentiment:
 
     def top_features(self, n=15):
         if not hasattr(self.model, "coef_"):
-            raise RuntimeError("Model is not trained. Call fit() before top_features().")
+            raise RuntimeError(
+                "Model is not trained. Call fit() before top_features()."
+            )
 
         vocab = self.vectorizer.get_feature_names_out()
         class_features = {}

@@ -19,6 +19,15 @@ DATA_DIR_CANDIDATES = [
     os.path.join(PROJECT_ROOT, "data", "data", "uit-vsfc-sentiment"),
 ]
 
+BEST_PARAMS = {
+    "C": 2.0,
+    "max_iter": 1000,
+    "ngram_range": (1, 2),
+    "max_features": 30000,
+    "sublinear_tf": True,
+    "class_weight": "balanced",
+}
+
 
 def find_data_dir():
     for data_dir in DATA_DIR_CANDIDATES:
@@ -40,13 +49,16 @@ def main():
     X_train_clean = preprocessor.clean_batch(X_train)
     X_test_clean = preprocessor.clean_batch(X_test)
 
-    print("\nTrain Logistic Regression...")
-    model = LogisticRegressionSentiment()
+    print("\nTrain final Logistic Regression...")
+    print(f"Best params from dev tuning: {BEST_PARAMS}")
+    model = LogisticRegressionSentiment(**BEST_PARAMS)
     model.fit(X_train_clean, y_train)
 
     print("\nEvaluate on test set...")
     result = evaluate(model, X_test_clean, y_test)
     print_result(result)
+
+    model.top_features(15)
 
     model_path = os.path.join(PROJECT_ROOT, "models", "logistic_regression.joblib")
     save_model(model, model_path)
