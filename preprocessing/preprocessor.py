@@ -1,6 +1,8 @@
 import re
 import unicodedata
 
+from preprocessing.negation import normalize_negation
+
 
 TEENCODE_MAP = {
     "ko": "không",
@@ -61,6 +63,7 @@ class Preprocessor:
         normalize_unicode=True,
         normalize_special_tokens=True,
         normalize_teencode=True,
+        normalize_negation=True,
         remove_punct=True,
         remove_digits=True,
         word_segment=True,
@@ -69,6 +72,7 @@ class Preprocessor:
         self.normalize_unicode = normalize_unicode
         self.normalize_special_tokens = normalize_special_tokens
         self.normalize_teencode = normalize_teencode
+        self.normalize_negation = normalize_negation
         self.remove_punct = remove_punct
         self.remove_digits = remove_digits
         self.word_segment = word_segment
@@ -111,6 +115,9 @@ class Preprocessor:
             word_tokenize = _get_word_tokenize()
             if word_tokenize is not None:
                 text = word_tokenize(text, format="text")
+
+        if self.normalize_negation and text:
+            text = normalize_negation(text)
 
         # Xóa stopwords nếu bật
         if self.remove_stopwords and text:
