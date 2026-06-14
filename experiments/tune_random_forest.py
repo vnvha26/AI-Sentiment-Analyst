@@ -11,14 +11,13 @@ from algorithms.random_forest import RandomForestSentiment
 from data.loader import load_dataset
 from evaluation.evaluator import evaluate, print_result
 from preprocessing.preprocessor import Preprocessor
+from utils.imbalance import NEUTRAL_LABEL, oversample_label
 
 
 DATA_DIR_CANDIDATES = [
     os.path.join(PROJECT_ROOT, "data", "uit-vsfc-sentiment"),
     os.path.join(PROJECT_ROOT, "data", "data", "uit-vsfc-sentiment"),
 ]
-
-NEUTRAL_LABEL = 1
 
 MODEL_PARAM_KEYS = {
     "n_estimators",
@@ -175,22 +174,6 @@ def get_model_params(params):
         for key, value in params.items()
         if key in MODEL_PARAM_KEYS
     }
-
-
-def oversample_label(X, y, label, multiplier):
-    if multiplier <= 1:
-        return X, y
-
-    X_resampled = list(X)
-    y_resampled = list(y)
-
-    for text, target in zip(X, y):
-        if target == label:
-            for _ in range(multiplier - 1):
-                X_resampled.append(text)
-                y_resampled.append(target)
-
-    return X_resampled, y_resampled
 
 
 def print_row(index, params, result):
