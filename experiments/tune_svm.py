@@ -21,10 +21,9 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, PROJECT_ROOT)
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-from sklearn.metrics import accuracy_score, f1_score
-
 from algorithms.svm import SVMClassifier
 from data.loader import load_dataset
+from evaluation.evaluator import evaluate
 from preprocessing.preprocessor import Preprocessor
 
 
@@ -39,6 +38,16 @@ def find_data_dir():
         if os.path.exists(os.path.join(data_dir, "train.csv")):
             return data_dir
     return DATA_DIR_CANDIDATES[0]
+
+
+NEUTRAL_LABEL = 1
+
+
+def get_label_f1(result, label_id):
+    for item in result.get("label_scores", []):
+        if item["label"] == label_id:
+            return item.get("f1", 0)
+    return 0
 
 
 def main():
@@ -99,11 +108,15 @@ def main():
                     model.fit(X_train_clean, y_train)
                     train_time = time.time() - t0
 
-                    y_pred = model.predict(X_dev_clean)
-                    dev_acc = accuracy_score(y_dev, y_pred)
-                    dev_f1 = f1_score(y_dev, y_pred, average="weighted", zero_division=0)
+                    result = evaluate(model, X_dev_clean, y_dev)
+                    dev_acc = result["accuracy"]
+                    dev_f1 = result["f1"]
+                    neutral_f1 = get_label_f1(result, NEUTRAL_LABEL)
 
-                    print(f"  -> dev_acc={dev_acc*100:.2f}% dev_f1={dev_f1*100:.2f}% time={train_time:.1f}s")
+                    print(
+                        f"  -> dev_acc={dev_acc*100:.2f}% dev_f1={dev_f1*100:.2f}% "
+                        f"neutral_f1={neutral_f1*100:.2f}% time={train_time:.1f}s"
+                    )
 
                     config = {
                         "C": C,
@@ -112,6 +125,7 @@ def main():
                         "sublinear_tf": sublinear_tf,
                         "dev_accuracy": dev_acc,
                         "dev_f1": dev_f1,
+                        "neutral_f1": neutral_f1,
                         "train_time": train_time,
                     }
                     results.append(config)
@@ -125,15 +139,16 @@ def main():
     print("=" * 80)
     print(
         f"  {'C':>4} {'ngram':>8} {'max_feat':>10} {'sublinear':>10} "
-        f"{'dev_acc':>10} {'dev_f1':>10} {'time(s)':>10}"
+        f"{'dev_acc':>10} {'dev_f1':>10} {'neutral_f1':>10} {'time(s)':>10}"
     )
-    print("-" * 80)
+    print("-" * 90)
     for r in results:
         marker = " ⭐" if r is best_config else ""
         print(
             f"  {r['C']:>4.1f} {str(r['ngram_range']):>8} {r['max_features']:>10} "
             f"{str(r['sublinear_tf']):>10} {r['dev_accuracy']*100:>9.2f}% "
-            f"{r['dev_f1']*100:>9.2f}% {r['train_time']:>9.1f}s{marker}"
+            f"{r['dev_f1']*100:>9.2f}% {r['neutral_f1']*100:>9.2f}% "
+            f"{r['train_time']:>9.1f}s{marker}"
         )
     print("=" * 80)
 
