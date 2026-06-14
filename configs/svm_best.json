@@ -1,0 +1,12 @@
+{
+  "C": 2.0,
+  "ngram_range": [
+    1,
+    2
+  ],
+  "max_features": 30000,
+  "sublinear_tf": false,
+  "dev_accuracy": 0.919772583701832,
+  "dev_f1": 0.9104877723985612,
+  "train_time": 1.1744513511657715
+}
