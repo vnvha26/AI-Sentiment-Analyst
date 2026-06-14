@@ -36,10 +36,10 @@ class LogisticRegressionSentiment:
         self.model = LogisticRegression(**self.model_params)
         self.train_time = 0
 
-    def fit(self, X_train, y_train):
+    def fit(self, X_train, y_train, sample_weight=None):
         start = time.time()
         X_vec = self.vectorizer.fit_transform(X_train)
-        self.model.fit(X_vec, y_train)
+        self.model.fit(X_vec, y_train, sample_weight=sample_weight)
         self.train_time = time.time() - start
         print(f"[{self.name}] Train done in {self.train_time:.3f}s")
 
