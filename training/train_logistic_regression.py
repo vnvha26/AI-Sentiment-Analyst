@@ -19,6 +19,8 @@ DATA_DIR_CANDIDATES = [
     os.path.join(PROJECT_ROOT, "data", "data", "uit-vsfc-sentiment"),
 ]
 
+# Selected from experiments/tune_logistic_regression.py by weighted dev F1.
+# Neutral F1 is tracked separately to analyze class imbalance.
 BEST_PARAMS = {
     "C": 2.0,
     "max_iter": 1000,
