@@ -21,7 +21,7 @@ MODEL_PATHS = {
         "models",
         "logistic_regression.joblib",
     ),
-    "svm": os.path.join(PROJECT_ROOT, "models", "svm.joblib"),
+    "svm": os.path.join(PROJECT_ROOT, "models", "svm_best.joblib"),
 }
 
 
