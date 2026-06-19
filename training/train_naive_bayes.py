@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import sys
 
@@ -19,18 +20,27 @@ DATA_DIR_CANDIDATES = [
     os.path.join(PROJECT_ROOT, "data", "uit-vsfc-sentiment"),
     os.path.join(PROJECT_ROOT, "data", "data", "uit-vsfc-sentiment"),
 ]
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "configs", "naive_bayes_best.json")
+MODEL_PARAM_KEYS = {
+    "alpha",
+    "ngram_range",
+    "max_features",
+    "sublinear_tf",
+    "fit_prior",
+    "class_prior",
+}
 
 # Selected from experiments/tune_naive_bayes.py by weighted dev F1.
 # Neutral F1 is tracked separately to analyze class imbalance.
-BEST_PARAMS = {
+DEFAULT_CONFIG = {
     "alpha": 0.5,
     "ngram_range": (1, 2),
     "max_features": 30000,
     "sublinear_tf": True,
     "fit_prior": True,
     "class_prior": None,
+    "neutral_multiplier": 3,
 }
-NEUTRAL_MULTIPLIER = 3
 
 
 def find_data_dir():
@@ -38,6 +48,28 @@ def find_data_dir():
         if os.path.exists(os.path.join(data_dir, "train.csv")):
             return data_dir
     return DATA_DIR_CANDIDATES[0]
+
+
+def load_best_config():
+    if not os.path.exists(CONFIG_PATH):
+        print(f"Config not found, use default config: {CONFIG_PATH}")
+        return dict(DEFAULT_CONFIG)
+
+    with open(CONFIG_PATH, encoding="utf-8") as file:
+        config = json.load(file)
+
+    if "ngram_range" in config:
+        config["ngram_range"] = tuple(config["ngram_range"])
+
+    return config
+
+
+def get_model_params(config):
+    return {
+        key: value
+        for key, value in config.items()
+        if key in MODEL_PARAM_KEYS
+    }
 
 
 def main():
@@ -53,16 +85,22 @@ def main():
     X_train_clean = preprocessor.clean_batch(X_train)
     X_test_clean = preprocessor.clean_batch(X_test)
 
+    config = load_best_config()
+    model_params = get_model_params(config)
+    neutral_multiplier = config.get("neutral_multiplier", 1)
+
     print("\nTrain final Naive Bayes...")
-    print(f"Best params from dev tuning: {BEST_PARAMS}")
-    print(f"Neutral oversampling multiplier: {NEUTRAL_MULTIPLIER}")
+    print(f"Best params from dev tuning: {model_params}")
+    print(f"Neutral oversampling multiplier: {neutral_multiplier}")
+    if "dev_f1" in config:
+        print(f"Dev F1 from tuning: {config['dev_f1'] * 100:.2f}%")
     X_fit, y_fit = oversample_label(
         X_train_clean,
         y_train,
         NEUTRAL_LABEL,
-        NEUTRAL_MULTIPLIER,
+        neutral_multiplier,
     )
-    model = NaiveBayesClassifier(**BEST_PARAMS)
+    model = NaiveBayesClassifier(**model_params)
     model.fit(X_fit, y_fit)
 
     print("\nEvaluate on test set...")

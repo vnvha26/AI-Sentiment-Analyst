@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import sys
 
@@ -18,10 +19,19 @@ DATA_DIR_CANDIDATES = [
     os.path.join(PROJECT_ROOT, "data", "uit-vsfc-sentiment"),
     os.path.join(PROJECT_ROOT, "data", "data", "uit-vsfc-sentiment"),
 ]
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "configs", "logistic_regression_best.json")
+MODEL_PARAM_KEYS = {
+    "C",
+    "max_iter",
+    "ngram_range",
+    "max_features",
+    "sublinear_tf",
+    "class_weight",
+}
 
 # Selected from experiments/tune_logistic_regression.py by weighted dev F1.
 # Neutral F1 is tracked separately to analyze class imbalance.
-BEST_PARAMS = {
+DEFAULT_CONFIG = {
     "C": 2.0,
     "max_iter": 1000,
     "ngram_range": (1, 2),
@@ -38,6 +48,28 @@ def find_data_dir():
     return DATA_DIR_CANDIDATES[0]
 
 
+def load_best_config():
+    if not os.path.exists(CONFIG_PATH):
+        print(f"Config not found, use default config: {CONFIG_PATH}")
+        return dict(DEFAULT_CONFIG)
+
+    with open(CONFIG_PATH, encoding="utf-8") as file:
+        config = json.load(file)
+
+    if "ngram_range" in config:
+        config["ngram_range"] = tuple(config["ngram_range"])
+
+    return config
+
+
+def get_model_params(config):
+    return {
+        key: value
+        for key, value in config.items()
+        if key in MODEL_PARAM_KEYS
+    }
+
+
 def main():
     data_dir = find_data_dir()
     print(f"Load dataset from: {data_dir}")
@@ -51,9 +83,14 @@ def main():
     X_train_clean = preprocessor.clean_batch(X_train)
     X_test_clean = preprocessor.clean_batch(X_test)
 
+    config = load_best_config()
+    model_params = get_model_params(config)
+
     print("\nTrain final Logistic Regression...")
-    print(f"Best params from dev tuning: {BEST_PARAMS}")
-    model = LogisticRegressionSentiment(**BEST_PARAMS)
+    print(f"Best params from dev tuning: {model_params}")
+    if "dev_f1" in config:
+        print(f"Dev F1 from tuning: {config['dev_f1'] * 100:.2f}%")
+    model = LogisticRegressionSentiment(**model_params)
     model.fit(X_train_clean, y_train)
 
     print("\nEvaluate on test set...")

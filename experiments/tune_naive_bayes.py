@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import sys
 
@@ -18,6 +19,7 @@ DATA_DIR_CANDIDATES = [
     os.path.join(PROJECT_ROOT, "data", "uit-vsfc-sentiment"),
     os.path.join(PROJECT_ROOT, "data", "data", "uit-vsfc-sentiment"),
 ]
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "configs", "naive_bayes_best.json")
 
 MODEL_PARAM_KEYS = {
     "alpha",
@@ -135,6 +137,31 @@ def get_model_params(params):
     }
 
 
+def save_best_config(best, best_neutral):
+    params = dict(best["params"])
+    config = {
+        **params,
+        "selection_metric": "weighted_dev_f1",
+        "dev_accuracy": float(best["result"]["accuracy"]),
+        "dev_f1": float(best["result"]["f1"]),
+        "dev_neutral_f1": float(get_label_f1(best["result"], NEUTRAL_LABEL)),
+        "best_neutral": {
+            "params": dict(best_neutral["params"]),
+            "dev_accuracy": float(best_neutral["result"]["accuracy"]),
+            "dev_f1": float(best_neutral["result"]["f1"]),
+            "dev_neutral_f1": float(
+                get_label_f1(best_neutral["result"], NEUTRAL_LABEL)
+            ),
+        },
+    }
+
+    os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+    with open(CONFIG_PATH, "w", encoding="utf-8") as file:
+        json.dump(config, file, ensure_ascii=False, indent=2)
+
+    return CONFIG_PATH
+
+
 def print_row(index, params, result):
     neutral_f1 = get_label_f1(result, NEUTRAL_LABEL)
     print(
@@ -216,6 +243,8 @@ def main():
             f"{get_label_f1(best_neutral['result'], NEUTRAL_LABEL) * 100:.2f}%"
         )
 
+    config_path = save_best_config(best, best_neutral)
+    print(f"\nSaved best config to: {config_path}")
     print("\nNext step: train final with the selected config, then evaluate once on test.")
 
 

@@ -1,0 +1,31 @@
+{
+  "C": 2.0,
+  "max_iter": 1000,
+  "ngram_range": [
+    1,
+    2
+  ],
+  "max_features": 30000,
+  "sublinear_tf": true,
+  "class_weight": null,
+  "selection_metric": "weighted_dev_f1",
+  "dev_accuracy": 0.9115603284902085,
+  "dev_f1": 0.8993995134385308,
+  "dev_neutral_f1": 0.24719101123595505,
+  "best_neutral": {
+    "params": {
+      "C": 0.5,
+      "max_iter": 1000,
+      "ngram_range": [
+        1,
+        2
+      ],
+      "max_features": 30000,
+      "sublinear_tf": true,
+      "class_weight": "balanced"
+    },
+    "dev_accuracy": 0.8768161718256475,
+    "dev_f1": 0.8836957808753728,
+    "dev_neutral_f1": 0.42328042328042326
+  }
+}
