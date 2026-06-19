@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import sys
 
@@ -19,10 +20,20 @@ DATA_DIR_CANDIDATES = [
     os.path.join(PROJECT_ROOT, "data", "uit-vsfc-sentiment"),
     os.path.join(PROJECT_ROOT, "data", "data", "uit-vsfc-sentiment"),
 ]
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "configs", "random_forest_best.json")
+MODEL_PARAM_KEYS = {
+    "n_estimators",
+    "max_depth",
+    "ngram_range",
+    "max_features",
+    "sublinear_tf",
+    "min_samples_leaf",
+    "class_weight",
+}
 
 # Selected from experiments/tune_random_forest.py by weighted dev F1.
 # Neutral F1 is tracked separately to analyze class imbalance.
-BEST_PARAMS = {
+DEFAULT_CONFIG = {
     "n_estimators": 200,
     "max_depth": None,
     "ngram_range": (1, 2),
@@ -30,8 +41,8 @@ BEST_PARAMS = {
     "sublinear_tf": False,
     "min_samples_leaf": 1,
     "class_weight": None,
+    "neutral_multiplier": 1,
 }
-NEUTRAL_MULTIPLIER = 1
 
 
 def find_data_dir():
@@ -39,6 +50,28 @@ def find_data_dir():
         if os.path.exists(os.path.join(data_dir, "train.csv")):
             return data_dir
     return DATA_DIR_CANDIDATES[0]
+
+
+def load_best_config():
+    if not os.path.exists(CONFIG_PATH):
+        print(f"Config not found, use default config: {CONFIG_PATH}")
+        return dict(DEFAULT_CONFIG)
+
+    with open(CONFIG_PATH, encoding="utf-8") as file:
+        config = json.load(file)
+
+    if "ngram_range" in config:
+        config["ngram_range"] = tuple(config["ngram_range"])
+
+    return config
+
+
+def get_model_params(config):
+    return {
+        key: value
+        for key, value in config.items()
+        if key in MODEL_PARAM_KEYS
+    }
 
 
 def main():
@@ -54,16 +87,22 @@ def main():
     X_train_clean = preprocessor.clean_batch(X_train)
     X_test_clean = preprocessor.clean_batch(X_test)
 
+    config = load_best_config()
+    model_params = get_model_params(config)
+    neutral_multiplier = config.get("neutral_multiplier", 1)
+
     print("\nTrain final Random Forest...")
-    print(f"Best params from dev tuning: {BEST_PARAMS}")
-    print(f"Neutral oversampling multiplier: {NEUTRAL_MULTIPLIER}")
+    print(f"Best params from dev tuning: {model_params}")
+    print(f"Neutral oversampling multiplier: {neutral_multiplier}")
+    if "dev_f1" in config:
+        print(f"Dev F1 from tuning: {config['dev_f1'] * 100:.2f}%")
     X_fit, y_fit = oversample_label(
         X_train_clean,
         y_train,
         NEUTRAL_LABEL,
-        NEUTRAL_MULTIPLIER,
+        neutral_multiplier,
     )
-    model = RandomForestSentiment(**BEST_PARAMS)
+    model = RandomForestSentiment(**model_params)
     model.fit(X_fit, y_fit)
 
     print("\nEvaluate on test set...")
