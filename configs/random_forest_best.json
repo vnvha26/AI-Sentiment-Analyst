@@ -1,0 +1,35 @@
+{
+  "n_estimators": 200,
+  "max_depth": null,
+  "ngram_range": [
+    1,
+    2
+  ],
+  "max_features": 15000,
+  "sublinear_tf": false,
+  "min_samples_leaf": 1,
+  "class_weight": null,
+  "neutral_multiplier": 1,
+  "selection_metric": "weighted_dev_f1",
+  "dev_accuracy": 0.8957675300063171,
+  "dev_f1": 0.887467817031414,
+  "dev_neutral_f1": 0.3137254901960784,
+  "best_neutral": {
+    "params": {
+      "n_estimators": 200,
+      "max_depth": null,
+      "ngram_range": [
+        1,
+        2
+      ],
+      "max_features": 15000,
+      "sublinear_tf": true,
+      "min_samples_leaf": 2,
+      "class_weight": "balanced",
+      "neutral_multiplier": 3
+    },
+    "dev_accuracy": 0.8641819330385344,
+    "dev_f1": 0.8678008146460316,
+    "dev_neutral_f1": 0.4235294117647059
+  }
+}
