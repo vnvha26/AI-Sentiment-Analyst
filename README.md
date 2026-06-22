@@ -54,22 +54,7 @@ Nếu đã có project ở máy thì chỉ cần mở terminal tại thư mục 
 
 ## 3. Tạo môi trường Python
 
-### Cách 1: Dùng Conda
-
-```bash
-conda create -n vh_prj2 python=3.10 -y
-conda activate vh_prj2
-python -m pip install --upgrade pip
-pip install numpy pandas scikit-learn joblib underthesea streamlit
-```
-
-Những lần chạy sau chỉ cần kích hoạt lại môi trường:
-
-```bash
-conda activate vh_prj2
-```
-
-### Cách 2: Dùng venv trên Windows
+### Dùng venv trên Windows
 
 ```bash
 py -3.10 -m venv .venv
