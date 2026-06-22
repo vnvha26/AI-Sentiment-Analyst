@@ -113,24 +113,8 @@ def get_label_f1(result, label_id):
     return 0
 
 
-def save_best_config(best, best_neutral):
-    params = dict(best["params"])
-    config = {
-        **params,
-        "selection_metric": "weighted_dev_f1",
-        "dev_accuracy": float(best["result"]["accuracy"]),
-        "dev_f1": float(best["result"]["f1"]),
-        "dev_neutral_f1": float(get_label_f1(best["result"], NEUTRAL_LABEL)),
-        "best_neutral": {
-            "params": dict(best_neutral["params"]),
-            "dev_accuracy": float(best_neutral["result"]["accuracy"]),
-            "dev_f1": float(best_neutral["result"]["f1"]),
-            "dev_neutral_f1": float(
-                get_label_f1(best_neutral["result"], NEUTRAL_LABEL)
-            ),
-        },
-    }
-
+def save_best_config(best):
+    config = dict(best["params"])
     os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
     with open(CONFIG_PATH, "w", encoding="utf-8") as file:
         json.dump(config, file, ensure_ascii=False, indent=2)
@@ -217,7 +201,7 @@ def main():
             f"{get_label_f1(best_neutral['result'], NEUTRAL_LABEL) * 100:.2f}%"
         )
 
-    config_path = save_best_config(best, best_neutral)
+    config_path = save_best_config(best)
     print(f"\nSaved best config to: {config_path}")
     print("\nNext step: train final with the selected config, then evaluate once on test.")
 

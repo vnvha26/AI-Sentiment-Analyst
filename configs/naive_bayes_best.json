@@ -1,5 +1,5 @@
 {
-  "alpha": 0.5,
+  "alpha": 0.3,
   "ngram_range": [
     1,
     2
@@ -8,26 +8,6 @@
   "sublinear_tf": true,
   "fit_prior": true,
   "class_prior": null,
-  "neutral_multiplier": 3,
-  "selection_metric": "weighted_dev_f1",
-  "dev_accuracy": 0.8900821225521163,
-  "dev_f1": 0.8788785559112829,
-  "dev_neutral_f1": 0.2696629213483146,
-  "best_neutral": {
-    "params": {
-      "alpha": 0.5,
-      "ngram_range": [
-        1,
-        2
-      ],
-      "max_features": 30000,
-      "sublinear_tf": true,
-      "fit_prior": true,
-      "class_prior": null,
-      "neutral_multiplier": 3
-    },
-    "dev_accuracy": 0.8900821225521163,
-    "dev_f1": 0.8788785559112829,
-    "dev_neutral_f1": 0.2696629213483146
-  }
+  "neutral_multiplier": 1,
+  "neutral_weight": 5
 }

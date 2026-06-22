@@ -43,6 +43,13 @@ def oversample_neutral(X, y, multiplier=1):
     )
 
 
+def sample_weight_for_label(y, label=NEUTRAL_LABEL, weight=1.0):
+    return [
+        float(weight) if target == label else 1.0
+        for target in y
+    ]
+
+
 def oversample_to_max_class(X, y):
     counts = Counter(y)
     if not counts:
