@@ -12,6 +12,7 @@ from algorithms.logistic_regression import LogisticRegressionSentiment
 from data.loader import load_dataset
 from evaluation.evaluator import evaluate, print_result
 from preprocessing.preprocessor import Preprocessor
+from utils.imbalance import NEUTRAL_LABEL, sample_weight_for_label
 
 
 DATA_DIR_CANDIDATES = [
@@ -20,7 +21,14 @@ DATA_DIR_CANDIDATES = [
 ]
 CONFIG_PATH = os.path.join(PROJECT_ROOT, "configs", "logistic_regression_best.json")
 
-NEUTRAL_LABEL = 1
+MODEL_PARAM_KEYS = {
+    "C",
+    "max_iter",
+    "ngram_range",
+    "max_features",
+    "sublinear_tf",
+    "class_weight",
+}
 
 PARAM_GRID = [
     {
@@ -30,6 +38,7 @@ PARAM_GRID = [
         "max_features": 15000,
         "sublinear_tf": True,
         "class_weight": None,
+        "neutral_weight": 1,
     },
     {
         "C": 1.0,
@@ -38,6 +47,7 @@ PARAM_GRID = [
         "max_features": 30000,
         "sublinear_tf": True,
         "class_weight": None,
+        "neutral_weight": 1,
     },
     {
         "C": 2.0,
@@ -46,6 +56,7 @@ PARAM_GRID = [
         "max_features": 30000,
         "sublinear_tf": True,
         "class_weight": None,
+        "neutral_weight": 1,
     },
     {
         "C": 1.0,
@@ -54,6 +65,7 @@ PARAM_GRID = [
         "max_features": 50000,
         "sublinear_tf": True,
         "class_weight": None,
+        "neutral_weight": 1,
     },
     {
         "C": 1.0,
@@ -62,6 +74,7 @@ PARAM_GRID = [
         "max_features": 30000,
         "sublinear_tf": False,
         "class_weight": None,
+        "neutral_weight": 1,
     },
     {
         "C": 0.5,
@@ -70,6 +83,7 @@ PARAM_GRID = [
         "max_features": 30000,
         "sublinear_tf": True,
         "class_weight": "balanced",
+        "neutral_weight": 1,
     },
     {
         "C": 1.0,
@@ -78,6 +92,7 @@ PARAM_GRID = [
         "max_features": 30000,
         "sublinear_tf": True,
         "class_weight": "balanced",
+        "neutral_weight": 1,
     },
     {
         "C": 2.0,
@@ -86,17 +101,63 @@ PARAM_GRID = [
         "max_features": 30000,
         "sublinear_tf": True,
         "class_weight": "balanced",
+        "neutral_weight": 1,
+    },
+    {
+        "C": 1.0,
+        "max_iter": 1000,
+        "ngram_range": (1, 2),
+        "max_features": 30000,
+        "sublinear_tf": True,
+        "class_weight": None,
+        "neutral_weight": 2,
+    },
+    {
+        "C": 1.0,
+        "max_iter": 1000,
+        "ngram_range": (1, 2),
+        "max_features": 30000,
+        "sublinear_tf": True,
+        "class_weight": None,
+        "neutral_weight": 3,
+    },
+    {
+        "C": 1.0,
+        "max_iter": 1000,
+        "ngram_range": (1, 2),
+        "max_features": 30000,
+        "sublinear_tf": True,
+        "class_weight": None,
+        "neutral_weight": 5,
+    },
+    {
+        "C": 2.0,
+        "max_iter": 1000,
+        "ngram_range": (1, 2),
+        "max_features": 30000,
+        "sublinear_tf": True,
+        "class_weight": None,
+        "neutral_weight": 2,
+    },
+    {
+        "C": 2.0,
+        "max_iter": 1000,
+        "ngram_range": (1, 2),
+        "max_features": 30000,
+        "sublinear_tf": True,
+        "class_weight": None,
+        "neutral_weight": 3,
+    },
+    {
+        "C": 2.0,
+        "max_iter": 1000,
+        "ngram_range": (1, 2),
+        "max_features": 30000,
+        "sublinear_tf": True,
+        "class_weight": None,
+        "neutral_weight": 5,
     },
 ]
-
-SELECTED_PARAMS = {
-    "C": 2.0,
-    "max_iter": 1000,
-    "ngram_range": (1, 2),
-    "max_features": 30000,
-    "sublinear_tf": True,
-    "class_weight": "balanced",
-}
 
 
 def find_data_dir():
@@ -113,6 +174,21 @@ def get_label_f1(result, label_id):
     return 0
 
 
+def get_macro_f1(result):
+    label_scores = result.get("label_scores", [])
+    if not label_scores:
+        return 0
+    return sum(item.get("f1", 0) for item in label_scores) / len(label_scores)
+
+
+def get_model_params(params):
+    return {
+        key: value
+        for key, value in params.items()
+        if key in MODEL_PARAM_KEYS
+    }
+
+
 def save_best_config(best):
     config = dict(best["params"])
     os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
@@ -124,6 +200,7 @@ def save_best_config(best):
 
 def print_row(index, params, result):
     neutral_f1 = get_label_f1(result, NEUTRAL_LABEL)
+    macro_f1 = get_macro_f1(result)
     print(
         f"{index:<3} "
         f"{params['C']:<5} "
@@ -131,8 +208,10 @@ def print_row(index, params, result):
         f"{params['max_features']:<8} "
         f"{str(params['sublinear_tf']):<6} "
         f"{str(params['class_weight']):<10} "
+        f"{params['neutral_weight']:<5} "
         f"{result['accuracy'] * 100:>8.2f}% "
         f"{result['f1'] * 100:>8.2f}% "
+        f"{macro_f1 * 100:>9.2f}% "
         f"{neutral_f1 * 100:>10.2f}%"
     )
 
@@ -153,23 +232,35 @@ def main():
     print("\nTune Logistic Regression on dev set")
     print(
         f"{'No':<3} {'C':<5} {'ngram':<8} {'max_feat':<8} "
-        f"{'subtf':<6} {'weight':<10} "
-        f"{'Accuracy':>9} {'F1':>9} {'Neutral F1':>11}"
+        f"{'subtf':<6} {'class_w':<10} {'neu_w':<5} "
+        f"{'Accuracy':>9} {'F1':>9} {'Macro F1':>10} {'Neutral F1':>11}"
     )
-    print("-" * 80)
+    print("-" * 100)
     print("Selection metric: weighted dev F1")
-    print("Neutral F1 is reported separately to analyze class imbalance.\n")
+    print("Macro F1 and Neutral F1 are reported separately to analyze class imbalance.\n")
 
     best = None
+    best_macro = None
     best_neutral = None
     for index, params in enumerate(PARAM_GRID, start=1):
-        model = LogisticRegressionSentiment(**params)
-        model.fit(X_train_clean, y_train)
+        sample_weight = sample_weight_for_label(
+            y_train,
+            NEUTRAL_LABEL,
+            params["neutral_weight"],
+        )
+        model = LogisticRegressionSentiment(**get_model_params(params))
+        model.fit(X_train_clean, y_train, sample_weight=sample_weight)
         result = evaluate(model, X_dev_clean, y_dev)
         print_row(index, params, result)
 
         if best is None or result["f1"] > best["result"]["f1"]:
             best = {
+                "params": params,
+                "result": result,
+            }
+
+        if best_macro is None or get_macro_f1(result) > get_macro_f1(best_macro["result"]):
+            best_macro = {
                 "params": params,
                 "result": result,
             }
@@ -188,10 +279,10 @@ def main():
     print(best["params"])
     print_result(best["result"])
 
-    print("\nSelected final config for Step 6:")
-    print(SELECTED_PARAMS)
-    if best["params"] != SELECTED_PARAMS:
-        print("Warning: selected config differs from the current best dev F1 config.")
+    if best_macro["params"] != best["params"]:
+        print("\nBest config by Macro F1:")
+        print(best_macro["params"])
+        print(f"Macro F1: {get_macro_f1(best_macro['result']) * 100:.2f}%")
 
     if best_neutral["params"] != best["params"]:
         print("\nBest config by Neutral F1:")

@@ -12,6 +12,7 @@ from algorithms.logistic_regression import LogisticRegressionSentiment
 from data.loader import load_dataset
 from evaluation.evaluator import evaluate, print_result
 from preprocessing.preprocessor import Preprocessor
+from utils.imbalance import NEUTRAL_LABEL, sample_weight_for_label
 from utils.model_manager import save_model
 
 
@@ -38,6 +39,7 @@ DEFAULT_CONFIG = {
     "max_features": 30000,
     "sublinear_tf": True,
     "class_weight": "balanced",
+    "neutral_weight": 1,
 }
 
 
@@ -85,13 +87,18 @@ def main():
 
     config = load_best_config()
     model_params = get_model_params(config)
+    neutral_weight = config.get("neutral_weight", 1)
 
     print("\nTrain final Logistic Regression...")
     print(f"Best params from dev tuning: {model_params}")
-    if "dev_f1" in config:
-        print(f"Dev F1 from tuning: {config['dev_f1'] * 100:.2f}%")
+    print(f"Neutral sample weight: {neutral_weight}")
+    sample_weight = sample_weight_for_label(
+        y_train,
+        NEUTRAL_LABEL,
+        neutral_weight,
+    )
     model = LogisticRegressionSentiment(**model_params)
-    model.fit(X_train_clean, y_train)
+    model.fit(X_train_clean, y_train, sample_weight=sample_weight)
 
     print("\nEvaluate on test set...")
     result = evaluate(model, X_test_clean, y_test)
