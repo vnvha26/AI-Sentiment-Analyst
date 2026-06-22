@@ -335,3 +335,155 @@ Voi Logistic Regression, `sample_weight=5` cho ket qua can bang hon `class_weigh
 - ket qua test giu duoc Accuracy `88.57%` va Neutral F1 `33.09%`.
 
 Neutral van la lop kho nhat do so mau it, nhung cach dung sample weight da giup model nhan dung `45/167` cau Neutral tren tap test.
+
+---
+
+## 4. Random Forest
+
+### 4.1. Diem yeu voi lop Neutral
+
+Random Forest khong phai mo hinh toi uu nhat cho vector TF-IDF nhieu chieu va thua. Moi cay chi hoc tren mot phan mau va dac trung, trong khi lop `Neutral` co rat it mau. Vi vay:
+
+- nhieu cay khong nhin thay du mau Neutral;
+- model de uu tien `Negative` va `Positive`;
+- oversampling co the bi trung voi co che bootstrap san co cua Random Forest;
+- `class_weight="balanced"` co the tang Neutral nhung lam giam Accuracy va weighted F1.
+
+---
+
+### 4.2. Cac cach da thu
+
+Qua trinh tune da so sanh:
+
+- khong xu ly mat can bang;
+- `class_weight="balanced"`;
+- oversampling qua `neutral_multiplier`;
+- `sample_weight` qua `neutral_weight`;
+- thay doi `min_samples_leaf` va `max_depth`.
+
+Config co Neutral F1 cao nhat tren dev la:
+
+```text
+class_weight       = balanced
+neutral_multiplier = 3
+min_samples_leaf   = 2
+
+Accuracy           = 86.42%
+Weighted F1        = 86.78%
+Macro F1           = 73.37%
+Neutral F1         = 42.35%
+```
+
+Config nay nhan dien Neutral tot hon, nhung Accuracy va weighted F1 giam nhieu, nen khong duoc chon lam config final.
+
+---
+
+### 4.3. Sample weight cho Neutral
+
+Project thu cac gia tri:
+
+```text
+neutral_weight = 1, 2, 3, 5, 8
+```
+
+Config tot nhat theo weighted dev F1:
+
+```json
+{
+  "n_estimators": 200,
+  "max_depth": null,
+  "ngram_range": [1, 2],
+  "max_features": 15000,
+  "sublinear_tf": false,
+  "min_samples_leaf": 1,
+  "class_weight": null,
+  "neutral_multiplier": 1,
+  "neutral_weight": 3
+}
+```
+
+Ket qua tren dev:
+
+```text
+Accuracy        = 89.58%
+Weighted F1     = 88.87%
+Macro F1        = 72.21%
+Neutral F1      = 33.64%
+```
+
+Ket qua tren test:
+
+```text
+Accuracy        = 87.08%
+Weighted F1     = 86.33%
+Macro F1        = 71.00%
+Neutral F1      = 33.33%
+Neutral dung    = 41/167
+```
+
+Chi tiet Neutral tren test:
+
+```text
+Precision       = 51.90%
+Recall          = 24.55%
+F1              = 33.33%
+```
+
+---
+
+### 4.4. So sanh truoc va sau
+
+| Chi so test | Truoc sample weight | Sau sample weight | Thay doi |
+|---|---:|---:|---:|
+| Accuracy | 87.08% | 87.08% | Khong doi |
+| Weighted F1 | 86.11% | 86.33% | +0.22 diem % |
+| Neutral F1 | 28.57% | 33.33% | +4.76 diem % |
+| Neutral dung | 33/167 | 41/167 | +8 cau |
+
+Sample weight giup Neutral tot hon ma khong lam giam Accuracy. Khi tang `neutral_weight` len `5` hoac `8`, cac chi so tong the bat dau giam, vi vay weight `3` la lua chon can bang hon trong grid hien tai.
+
+---
+
+### 4.5. Cach dang dung hien tai
+
+Random Forest hien tai dung:
+
+```text
+n_estimators      = 200
+sublinear_tf      = False
+min_samples_leaf  = 1
+class_weight      = None
+neutral_multiplier = 1
+neutral_weight    = 3
+```
+
+Tuc la:
+
+- khong oversampling Neutral;
+- khong dung `class_weight="balanced"`;
+- gan trong so `3` cho moi mau Neutral;
+- chon config chinh theo weighted dev F1;
+- theo doi them Macro F1 va Neutral F1.
+
+File lien quan:
+
+```text
+algorithms/random_forest.py
+experiments/tune_random_forest.py
+training/train_random_forest.py
+configs/random_forest_best.json
+utils/imbalance.py
+```
+
+---
+
+### 4.6. Ket luan cho Random Forest
+
+Voi Random Forest, `sample_weight=3` cho cai thien sach nhat trong cac config da thu:
+
+- Neutral F1 tang tu `28.57%` len `33.33%`;
+- so cau Neutral dung tang tu `33` len `41`;
+- weighted F1 tang nhe;
+- Accuracy duoc giu nguyen o `87.08%`.
+
+Random Forest van bi gioi han boi dac trung TF-IDF thua va so mau Neutral it, nhung config hien tai dat su can bang tot hon ma khong phai danh doi hieu nang tong the.

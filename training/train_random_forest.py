@@ -12,7 +12,7 @@ from algorithms.random_forest import RandomForestSentiment
 from data.loader import load_dataset
 from evaluation.evaluator import evaluate, print_result
 from preprocessing.preprocessor import Preprocessor
-from utils.imbalance import NEUTRAL_LABEL, oversample_label
+from utils.imbalance import NEUTRAL_LABEL, oversample_label, sample_weight_for_label
 from utils.model_manager import save_model
 
 
@@ -42,6 +42,7 @@ DEFAULT_CONFIG = {
     "min_samples_leaf": 1,
     "class_weight": None,
     "neutral_multiplier": 1,
+    "neutral_weight": 1,
 }
 
 
@@ -90,20 +91,25 @@ def main():
     config = load_best_config()
     model_params = get_model_params(config)
     neutral_multiplier = config.get("neutral_multiplier", 1)
+    neutral_weight = config.get("neutral_weight", 1)
 
     print("\nTrain final Random Forest...")
     print(f"Best params from dev tuning: {model_params}")
     print(f"Neutral oversampling multiplier: {neutral_multiplier}")
-    if "dev_f1" in config:
-        print(f"Dev F1 from tuning: {config['dev_f1'] * 100:.2f}%")
+    print(f"Neutral sample weight: {neutral_weight}")
     X_fit, y_fit = oversample_label(
         X_train_clean,
         y_train,
         NEUTRAL_LABEL,
         neutral_multiplier,
     )
+    sample_weight = sample_weight_for_label(
+        y_fit,
+        NEUTRAL_LABEL,
+        neutral_weight,
+    )
     model = RandomForestSentiment(**model_params)
-    model.fit(X_fit, y_fit)
+    model.fit(X_fit, y_fit, sample_weight=sample_weight)
 
     print("\nEvaluate on test set...")
     result = evaluate(model, X_test_clean, y_test)

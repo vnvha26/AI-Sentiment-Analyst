@@ -9,5 +9,6 @@
   "sublinear_tf": false,
   "min_samples_leaf": 1,
   "class_weight": null,
-  "neutral_multiplier": 1
+  "neutral_multiplier": 1,
+  "neutral_weight": 3
 }

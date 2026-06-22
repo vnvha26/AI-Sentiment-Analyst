@@ -12,7 +12,7 @@ from algorithms.random_forest import RandomForestSentiment
 from data.loader import load_dataset
 from evaluation.evaluator import evaluate, print_result
 from preprocessing.preprocessor import Preprocessor
-from utils.imbalance import NEUTRAL_LABEL, oversample_label
+from utils.imbalance import NEUTRAL_LABEL, oversample_label, sample_weight_for_label
 
 
 DATA_DIR_CANDIDATES = [
@@ -153,6 +153,50 @@ PARAM_GRID = [
         "class_weight": "balanced",
         "neutral_multiplier": 3,
     },
+    {
+        "n_estimators": 200,
+        "max_depth": None,
+        "ngram_range": (1, 2),
+        "max_features": 15000,
+        "sublinear_tf": False,
+        "min_samples_leaf": 1,
+        "class_weight": None,
+        "neutral_multiplier": 1,
+        "neutral_weight": 2,
+    },
+    {
+        "n_estimators": 200,
+        "max_depth": None,
+        "ngram_range": (1, 2),
+        "max_features": 15000,
+        "sublinear_tf": False,
+        "min_samples_leaf": 1,
+        "class_weight": None,
+        "neutral_multiplier": 1,
+        "neutral_weight": 3,
+    },
+    {
+        "n_estimators": 200,
+        "max_depth": None,
+        "ngram_range": (1, 2),
+        "max_features": 15000,
+        "sublinear_tf": False,
+        "min_samples_leaf": 1,
+        "class_weight": None,
+        "neutral_multiplier": 1,
+        "neutral_weight": 5,
+    },
+    {
+        "n_estimators": 200,
+        "max_depth": None,
+        "ngram_range": (1, 2),
+        "max_features": 15000,
+        "sublinear_tf": False,
+        "min_samples_leaf": 1,
+        "class_weight": None,
+        "neutral_multiplier": 1,
+        "neutral_weight": 8,
+    },
 ]
 
 
@@ -170,6 +214,13 @@ def get_label_f1(result, label_id):
     return 0
 
 
+def get_macro_f1(result):
+    label_scores = result.get("label_scores", [])
+    if not label_scores:
+        return 0
+    return sum(item.get("f1", 0) for item in label_scores) / len(label_scores)
+
+
 def get_model_params(params):
     return {
         key: value
@@ -179,7 +230,10 @@ def get_model_params(params):
 
 
 def save_best_config(best):
-    config = dict(best["params"])
+    config = {
+        **best["params"],
+        "neutral_weight": best["params"].get("neutral_weight", 1),
+    }
     os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
     with open(CONFIG_PATH, "w", encoding="utf-8") as file:
         json.dump(config, file, ensure_ascii=False, indent=2)
@@ -189,6 +243,7 @@ def save_best_config(best):
 
 def print_row(index, params, result):
     neutral_f1 = get_label_f1(result, NEUTRAL_LABEL)
+    macro_f1 = get_macro_f1(result)
     print(
         f"{index:<3} "
         f"{params['n_estimators']:<6} "
@@ -199,8 +254,10 @@ def print_row(index, params, result):
         f"{params['min_samples_leaf']:<4} "
         f"{str(params['class_weight']):<10} "
         f"{params['neutral_multiplier']:<5} "
+        f"{params.get('neutral_weight', 1):<5} "
         f"{result['accuracy'] * 100:>8.2f}% "
         f"{result['f1'] * 100:>8.2f}% "
+        f"{macro_f1 * 100:>9.2f}% "
         f"{neutral_f1 * 100:>10.2f}%"
     )
 
@@ -222,15 +279,16 @@ def main():
     print(
         f"{'No':<3} {'trees':<6} {'depth':<8} {'ngram':<8} "
         f"{'max_feat':<8} {'subtf':<6} {'leaf':<4} {'weight':<10} "
-        f"{'neu_x':<5} "
-        f"{'Accuracy':>9} {'F1':>9} {'Neutral F1':>11}"
+        f"{'neu_x':<5} {'neu_w':<5} "
+        f"{'Accuracy':>9} {'F1':>9} {'Macro F1':>10} {'Neutral F1':>11}"
     )
-    print("-" * 106)
+    print("-" * 122)
 
     print("Selection metric: weighted dev F1")
-    print("Neutral F1 is reported separately to analyze class imbalance.\n")
+    print("Macro F1 and Neutral F1 are reported separately to analyze class imbalance.\n")
 
     best = None
+    best_macro = None
     best_neutral = None
     for index, params in enumerate(PARAM_GRID, start=1):
         X_fit, y_fit = oversample_label(
@@ -239,14 +297,25 @@ def main():
             NEUTRAL_LABEL,
             params["neutral_multiplier"],
         )
+        sample_weight = sample_weight_for_label(
+            y_fit,
+            NEUTRAL_LABEL,
+            params.get("neutral_weight", 1),
+        )
         model = RandomForestSentiment(**get_model_params(params))
-        model.fit(X_fit, y_fit)
+        model.fit(X_fit, y_fit, sample_weight=sample_weight)
         result = evaluate(model, X_dev_clean, y_dev)
         print_row(index, params, result)
 
         # Primary model selection: maximize weighted F1 on dev.
         if best is None or result["f1"] > best["result"]["f1"]:
             best = {
+                "params": params,
+                "result": result,
+            }
+
+        if best_macro is None or get_macro_f1(result) > get_macro_f1(best_macro["result"]):
+            best_macro = {
                 "params": params,
                 "result": result,
             }
@@ -265,6 +334,11 @@ def main():
     print("\nBest config by dev F1:")
     print(best["params"])
     print_result(best["result"])
+
+    if best_macro["params"] != best["params"]:
+        print("\nBest config by Macro F1:")
+        print(best_macro["params"])
+        print(f"Macro F1: {get_macro_f1(best_macro['result']) * 100:.2f}%")
 
     if best_neutral["params"] != best["params"]:
         print("\nBest config by Neutral F1:")
