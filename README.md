@@ -54,22 +54,7 @@ Nếu đã có project ở máy thì chỉ cần mở terminal tại thư mục 
 
 ## 3. Tạo môi trường Python
 
-### Cách 1: Dùng Conda
-
-```bash
-conda create -n vh_prj2 python=3.10 -y
-conda activate vh_prj2
-python -m pip install --upgrade pip
-pip install numpy pandas scikit-learn joblib underthesea streamlit
-```
-
-Những lần chạy sau chỉ cần kích hoạt lại môi trường:
-
-```bash
-conda activate vh_prj2
-```
-
-### Cách 2: Dùng venv trên Windows
+### Dùng venv trên Windows
 
 ```bash
 py -3.10 -m venv .venv
@@ -387,65 +372,3 @@ Neutral Recall
 Neutral F1
 ```
 
-Chi tiết xử lý lớp Neutral được ghi tại:
-
-```text
-docs/neutral_handling.md
-```
-
-## 13. Lỗi thường gặp
-
-### `ModuleNotFoundError`
-
-Kích hoạt đúng môi trường rồi cài lại thư viện:
-
-```bash
-conda activate vh_prj2
-pip install numpy pandas scikit-learn joblib underthesea streamlit
-```
-
-### Không tìm thấy dữ liệu
-
-```bash
-python data/loader.py
-```
-
-### Không tìm thấy model
-
-Chạy file train tương ứng, ví dụ:
-
-```bash
-python training/train_logistic_regression.py
-```
-
-### Kết quả thay đổi sau khi sửa preprocessing
-
-Đây là hành vi bình thường vì TF-IDF sẽ học lại vocabulary. Hãy chạy lại tune và train.
-
-### Chữ tiếng Việt bị lỗi trên terminal Windows
-
-Có thể thử:
-
-```powershell
-$env:PYTHONIOENCODING="utf-8"
-```
-
-Sau đó chạy lại lệnh Python.
-
-## 14. Lưu ý Git
-
-Không nên dùng:
-
-```bash
-git add .
-```
-
-vì có thể add nhầm dữ liệu, model, PDF hoặc file đang làm dở. Nên add đúng từng file cần commit.
-
-Ví dụ:
-
-```bash
-git add README.md
-git commit -m "add installation and usage guide"
-git push origin main
-```
