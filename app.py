@@ -40,11 +40,11 @@ LABEL_COLORS = {
 }
 
 EXAMPLES = [
-    "Giảng viên dạy rất nhiệt tình và dễ hiểu",
-    "Hôm nay không vui",
-    "Giảng viên chưa nhiệt tình",
-    "Môn học bình thường",
-    "Bài giảng hơi khó hiểu",
+    "Môn học có điểm danh đầy đủ, tài liệu được gửi trên hệ thống theo từng tuần.",
+    "Hôm nay học không vui, bài giảng hơi khó theo kịp.",
+    "Hôm nay đi học rất bình thường",
+    "Giảng viên giảng khó hiểu, ít ví dụ và phản hồi sinh viên khá chậm.",
+    "Tối nay quán phở gần nhà nấu rất ngon và phục vụ nhanh.",
 ]
 
 MODEL_NOTES = [
@@ -413,13 +413,13 @@ def render_predict_tab(models, preprocessor):
 
 def main():
     st.set_page_config(
-        page_title="Phân tích cảm xúc tiếng Việt",
+        page_title="Phân loại cảm xúc",
         page_icon=None,
         layout="wide",
     )
     apply_global_styles()
 
-    st.title("Phân tích cảm xúc tiếng Việt")
+    st.title("Phân loại cảm xúc")
     st.caption("Pipeline TF-IDF với các model Machine Learning truyền thống đã được lưu")
 
     models, missing = load_available_models()
